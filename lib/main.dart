@@ -1,9 +1,9 @@
 
 import 'package:flutter/material.dart';
-import 'package:flute_music_player/flute_music_player.dart';
 import 'package:music_player/playing.dart';
 import 'package:music_player/model/SongsModel.dart';
 import 'package:scoped_model/scoped_model.dart';
+import 'package:flute_music_player/flute_music_player.dart';
 
 void main() => runApp(MyApp());
 
@@ -45,23 +45,26 @@ class _ListPageState extends State<ListPage>  {
       ),
       body: ScopedModelDescendant<SongsModel>(
         builder: (context, child, model){
-          return ListView.separated(
-          separatorBuilder: (context, i){return Divider(color: Colors.black,);},
-          itemCount: model.songs.length,
-          itemBuilder: (context,i){
-            return ListTile(
-              title: Text(model.songs[i].title),
-              onTap: (){
-                model.playing = i;
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (context){
-                    return PlayingPage();
-                  }
-                ));
+          return model.songs.length == 0 ? Center(child: CircularProgressIndicator()):
+            ListView.separated(
+              separatorBuilder: (context, i){return Divider(color: Colors.black,);},
+              itemCount: model.songs.length,
+              itemBuilder: (context,i){
+                return ListTile(
+                  title: Text(model.songs[i].title),
+                  onTap: (){
+                    model.playing = i;
+                    MusicFinder().stop();
+                    model.currentState = PlayingState.stopped;
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (context){
+                        return PlayingPage();
+                      }
+                    ));
+                  },
+                );
               },
             );
-          },
-        );
         }
       )
     );

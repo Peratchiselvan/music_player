@@ -11,9 +11,36 @@ class PlayingPage extends StatefulWidget {
 
 class _PlayingPageState extends State<PlayingPage> {
 
-  MusicFinder player = new MusicFinder();
+  MusicFinder player;
 
-  var currentValue = 0.0;
+  var currentValue = 0;
+  var duration = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    player = new MusicFinder();
+    player.setCompletionHandler(onComplete);
+    player.setDurationHandler((d){
+      duration = d.inSeconds;
+    });
+    player.setPositionHandler(handler);
+  }
+
+  void handler(d){
+    currentValue = d.inSeconds;
+    setState(() {
+      
+    });
+  }
+
+  void onComplete(){
+    player.stop();
+    SongsModel model = ScopedModel.of(context);
+    model.next();
+    play(model);
+    setState((){});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,20 +61,21 @@ class _PlayingPageState extends State<PlayingPage> {
                   )
                 ),
                 SizedBox(height: 30,),
-                Center(child: Text(model.songs[model.playing].title,style: TextStyle(fontSize: 20, color: Colors.red),),),
+                Center(child: Text(model.songs[model.playing].title + model.playing.toString(),style: TextStyle(fontSize: 20, color: Colors.red),),),
                 SizedBox(height: 10,),
                 Center(child: Text(model.songs[model.playing].artist,style: TextStyle(fontSize: 12, color: Colors.red),),),
                 SizedBox(height: 30,),
                 Slider(
-                  value: currentValue,
+                  value: currentValue.toDouble(),
+                  max: duration.toDouble(),
                   onChanged: (newValue){
                     setState(() {
-                      currentValue = newValue;
+                      player.seek(newValue);
                     });
                   },
                 ),
                 SizedBox(height: 30,),
-                getButtons(),
+                getButtons(model),
               ]
             );
           }
@@ -56,14 +84,28 @@ class _PlayingPageState extends State<PlayingPage> {
     );
   }
 
-  Widget getButtons(){
+  play(model){
+    var song = model.songs[model.playing];
+    player.play(song.uri, isLocal: true);
+    model.currentState = PlayingState.playing;
+  }
+  pause(model){
+    player.pause();
+    model.currentState = PlayingState.paused;
+  }
+  Widget getButtons(SongsModel model){
     return Row(
       children: <Widget>[
         Expanded(child: Container(),),
         IconButton(
           icon: Icon(Icons.skip_previous),
           onPressed: (){
-            // TODO: play previous
+            player.stop();
+            model.previous();
+            play(model);
+            setState(() {
+              
+            });
           },
         ),
         Expanded(child: Container(),),
@@ -74,11 +116,16 @@ class _PlayingPageState extends State<PlayingPage> {
           highlightColor: Colors.pink.withOpacity(0.5),
           elevation: 10.0,
           highlightElevation: 5.0,
-          onPressed: (){},
+          onPressed: (){
+            model.currentState != PlayingState.playing || model.currentState == PlayingState.stopped ? play(model) : pause(model);
+            setState(() {
+              
+            });
+          },
           child: new Padding(
             padding: const EdgeInsets.all(8.0),
             child: new Icon(
-              Icons.play_arrow,
+              model.currentState == PlayingState.playing ? Icons.pause : Icons.play_arrow,
               color: Colors.deepOrangeAccent[400],
               size: 35.0,
             ),
@@ -88,7 +135,12 @@ class _PlayingPageState extends State<PlayingPage> {
         IconButton(
           icon: Icon(Icons.skip_next),
           onPressed: (){
-            // TODO: play next song
+            player.stop();
+            model.next();
+            play(model);
+            setState(() {
+              
+            });
           },
         ),
         Expanded(child: Container(),),
